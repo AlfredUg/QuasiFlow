@@ -1,5 +1,5 @@
 
-params.reads = "$baseDir/*{1,2}.fastq"
+params.reads = "$baseDir/test/*{1,2}.fastq"
 params.rmd = "$baseDir/hivdr.Rmd"
 params.outdir = "$baseDir/results"
 
