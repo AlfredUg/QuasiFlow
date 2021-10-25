@@ -1,0 +1,25 @@
+Chromosome,Gene,Category,Surveillance,Wildtype,Position,Mutation,Mutation Frequency,Coverage
+hxb2_pol,PR,PIMinor,No,L,10,I,98.72,5248
+hxb2_pol,PR,PIMinor,No,K,20,T,89.44,6042
+hxb2_pol,PR,PIMinor,No,K,20,M,7.00,6042
+hxb2_pol,PR,PIMinor,Yes,L,24,I,99.09,6576
+hxb2_pol,PR,PIMajor,Yes,M,46,I,43.12,7017
+hxb2_pol,PR,PIMinor,No,M,46,V,55.05,7017
+hxb2_pol,PR,PIMajor,Yes,I,54,V,98.27,6629
+hxb2_pol,PR,PIMinor,No,A,71,L,98.33,6063
+hxb2_pol,PR,PIMajor,Yes,V,82,T,94.35,6376
+hxb2_pol,PR,PIMajor,Yes,I,84,V,91.78,6462
+hxb2_pol,RT,NRTI,Yes,M,41,L,98.20,7627
+hxb2_pol,RT,Other,No,T,69,S,4.39,5371
+hxb2_pol,RT,Other,No,T,69,A,91.21,5371
+hxb2_pol,RT,NRTI,Yes,L,74,V,97.78,7244
+hxb2_pol,RT,NNRTI,Yes,L,100,I,98.91,6984
+hxb2_pol,RT,NNRTI,Yes,K,103,N,99.02,6763
+hxb2_pol,RT,Other,No,V,118,I,99.09,7389
+hxb2_pol,RT,NNRTI,No,V,179,L,3.64,9415
+hxb2_pol,RT,NRTI,Yes,T,215,F,96.95,7436
+hxb2_pol,RT,NRTI,No,T,215,L,1.12,7436
+hxb2_pol,IN,Major,Yes,T,66,K,1.73,5881
+hxb2_pol,IN,Accessory,No,L,68,V,1.06,5863
+hxb2_pol,IN,Accessory,No,Q,95,K,1.04,5989
+hxb2_pol,IN,Major,No,Y,143,S,1.67,5674
