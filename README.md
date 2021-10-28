@@ -34,7 +34,7 @@ nextflow run testRmd.nf -with-singularity
 The parts in bold text are due before circulation of manuscript to other co-authors, we shall look into other parts as we go along.
 
 + **Sanitize the config file, add docker/singularity configuration, job schedulers, comprehensive paramater list** - Alfred
-+ **Fix the parsing of files to Rmd as parameters in nextflow** - Alfred and Ibra
++ **Fix the parsing of files to Rmd as parameters in nextflow** - Alfred and Ibra **FIXED**
 + **Display comments for each drug class/ARV from json file** - Ibra
 + **Add version of HIVDB used to html report** - Alfred
 + Convert html report to pdf
