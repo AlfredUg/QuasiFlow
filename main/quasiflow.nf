@@ -142,6 +142,6 @@ process renderReport{
 
     script:
     """
-    Rscript -e 'rmarkdown::render("${rmd}", params=list(dr_report_hydra="${dr_report}", dr_report_hivdb="${cns_json}"), output_file="hivdr_${pair_id}.html", output_dir = getwd())'
+    Rscript -e 'rmarkdown::render("${rmd}", params=list(dr_report_hydra="${params.outdir}/${dr_report}", dr_report_hivdb="${params.outdir}/${cns_json}"), output_file="hivdr_${pair_id}.html", output_dir = getwd())'
     """
 }
