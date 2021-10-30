@@ -32,6 +32,10 @@ for (i in 1:dim(hivdr)[1]) {
   genes<-drug_res$gene.name
   for (gene in unique(genes)) {
     gene_df<-drug_res[drug_res$gene.name==gene,]
+    
+    # extracted the version and date
+    version <- gene_df$version.text
+    verDate <- gene_df$version.publishDate
     gene_drug_scores<-gene_df$drugScores[[1]]
     gene_drug_scores<-gene_drug_scores[c("drugClass.name","drug.name", "score", "text")]
     tmp<-rbind(tmp, gene_drug_scores)
@@ -40,7 +44,7 @@ for (i in 1:dim(hivdr)[1]) {
   mutations<-seq_df$alignedGeneSequences[[1]]$mutations[[1]]
   mutation_list<-paste0(mutations$consensus,mutations$position,mutations$AAs)
 }
-out<-list(seq=seq, genes=genes, drugscores=tmp, mutations=mutation_list)
+out<-list(seq=seq, genes=genes, drugscores=tmp, mutations=mutation_list, version=version, version_date=verDate)
 return(out)
 }
 ```
@@ -51,7 +55,61 @@ seq<-hivdr$seq
 genes<-hivdr$genes
 mutation_list<-hivdr$mutation_list
 tmp<-hivdr$drugscores
+
+# added the algorithm version and date
+version <- paste("HIVDB", hivdr$version, sep = " ")
+verDate <- paste0("(",hivdr$version_date, ")" )
+version_date <- paste(version, verDate, sep=" ")
 ```
+
+```{r}
+# I re-parsed the json file to get the dataframe, I used below
+# I couldn't get the comments from the generate_dr_report() output
+
+hivdr_comments <- jsonlite::fromJSON(params$dr_report_hivdb, flatten = TRUE)
+drug_scores_list <- hivdr_comments$drugResistance[[1]][['drugScores']]
+
+obtain_comments <- function(x){
+  comments_df <- data.frame()
+  drugClass <- c()
+  for (i in 1:(length(x)-1)){
+    
+    # drug class of ARV
+    drugClass_vec <- x[[i]][['drugClass.name']]
+    drugClass <- c(drugClass, drugClass_vec)
+    partialScores_list <- x[[i]][['partialScores']]
+    
+    for (j in 1:length(partialScores_list)){
+      mutations_tmp <- partialScores_list[[j]]
+      mutations_list <- mutations_tmp[['mutations']]
+      if (is.null(mutations_list) == FALSE){
+        for (k in 1:length(mutations_list)){
+          comm_df <- mutations_list[[k]]
+          comments_df <- rbind(comments_df, comm_df)
+        }
+      }
+    }
+  }
+  text_df <- data.frame()
+  for (i in 1:dim(comments_df)[1]){
+    text <- comments_df[[i,'comments']][['text']]
+    text_df <- rbind(text_df, text)
+  }
+  names(text_df) <- c("drugComments")
+  comments_df$comments <- NULL
+  names(comments_df) <- c("mutation","primaryType")
+  
+  # removing similar rows in dataframe
+  # due to the highly nested nature of the JSON, I first output all available comments
+  
+  out <- cbind(comments_df, text_df)
+  return(unique(out))
+}
+
+comments <- obtain_comments(drug_scores_list)
+
+```
+
 
 ```{r}
 dr_report<-read.csv(params$dr_report_hydra)
@@ -71,6 +129,25 @@ OTHER_mutations<-RT$variants[RT$Category=="Other"]
 IN<-dr_report[dr_report$Gene=="IN",]
 IN_accessory_mutations<-IN$variants[IN$Category=="Accessory"]
 IN_major_mutations<-IN$variants[IN$Category=="Major"]
+```
+
+```{r}
+
+# get comments from comments dataframe using output from code chunk above
+row.names(comments) <- comments[[1]]
+
+PR_mutations <- c(PR_minor_mutations, PR_major_mutations)
+PR_comments <- comments[PR_mutations, 3]
+PR_comments <- PR_comments[!is.na(PR_comments)]
+
+RT_mutations <- c(NNRTI_mutations, NRTI_mutations, OTHER_mutations)
+RT_comments <- comments[RT_mutations, 3]
+RT_comments <- RT_comments[!is.na(RT_comments)]
+
+IN_mutations <- c(IN_major_mutations, IN_accessory_mutations)
+IN_comments <- comments[IN_mutations, 3]
+IN_comments <- IN_comments[!is.na(IN_comments)]
+
 ```
 
 <!-- Column {.sidebar data-width=300} -->
@@ -103,8 +180,8 @@ Mutation threshold: 20%
 
 Row 2
 -----------------------------------------------------------------------
-
 ### Drug Resistance Interpretation: PR
+Algorithm version: `r version_date`
 
 PI Major Mutations: `r PR_major_mutations`
 
@@ -112,7 +189,11 @@ PI Minor Mutations: `r PR_minor_mutations`
 
 Other Mutations:
 
-Comments:
+Comments: 
+```{r} 
+PR_comments <- paste('>', PR_comments, sep = ' ')
+cat(paste('', PR_comments, sep = '\n\n'))
+```
 
 ### Mutation HIVDR Scores: PR
 
@@ -124,9 +205,8 @@ PR_df[2:4] %>%
 
 Row 3
 -----------------------------------------------------------------------
-
-
 ### Drug Resistance Interpretation: RT
+Algorithm version: `r version_date`
 
 NNRTI Mutations: `r NNRTI_mutations`
 
@@ -135,6 +215,10 @@ NRTI Mutations: `r NRTI_mutations`
 Other Mutations: `r OTHER_mutations`
 
 Comments:
+```{r} 
+RT_comments <- paste('>', RT_comments, sep = ' ')
+cat(paste('', RT_comments, sep = '\n\n'))
+```
 
 ### Mutation HIVDR Scores: NNRTI
 
@@ -155,8 +239,8 @@ RT_df[2:4] %>%
 Row 4
 -----------------------------------------------------------------------
 
-
-### Drug Resistance Interpretation: INI
+### Drug Resistance Interpretation: INI 
+Algorithm version: `r version_date`
 
 INI Major Mutations: `r IN_major_mutations`
 
@@ -164,7 +248,11 @@ INI Accessory Mutations: `r IN_accessory_mutations`
 
 Other Mutations:
 
-Comments:
+Comments: 
+```{r} 
+IN_comments <- paste('>', IN_comments, sep = ' ')
+cat(paste('', IN_comments, sep = '\n\n'))
+```
 
 ### Mutation HIVDR Scores: INI
 ```{r}

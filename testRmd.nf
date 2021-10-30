@@ -39,7 +39,7 @@ process runSierralocal {
 
     script:
     """
-    /usr/bin/python3 ~/sierra-local/bin/sierralocal $cns_seq
+    python3 ~/sierra-local/bin/sierralocal $cns_seq
     """
 }
 
