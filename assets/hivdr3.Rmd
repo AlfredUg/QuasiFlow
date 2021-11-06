@@ -1,0 +1,247 @@
+---
+title: "QuasiFlow NGS-Based HIV Drug Resistance Report"
+params:
+  dr_report_hydra: ""
+  dr_report_hivdb: ""
+  mutation_comments: ""
+  mutational_threshold: 0.01
+  minimum_read_depth: 1000
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    #vertical_layout: fill
+    vertical_layout: scroll
+    #theme: flatly #spacelab #simplex #flatly 
+    #runtime: shiny
+---
+
+```{r setup, include=FALSE}
+require(knitr)
+library(flexdashboard)
+require(ggplot2)
+require(plyr)
+require(dplyr)
+require(kableExtra)
+```
+
+```{r, eval=TRUE}
+generate_dr_report<-function(path){
+  hivdr <- jsonlite::fromJSON(path, flatten = TRUE)
+tmp<-data.frame()
+for (i in 1:dim(hivdr)[1]) {
+  seq_df <- hivdr[i,]
+  seq<-seq_df$inputSequence.header
+  drug_res<-seq_df$drugResistance[[1]]
+  genes<-drug_res$gene.name
+  for (gene in unique(genes)) {
+    gene_df<-drug_res[drug_res$gene.name==gene,]
+    
+    # extracted the version and date
+    version <- gene_df$version.text
+    verDate <- gene_df$version.publishDate
+    gene_drug_scores<-gene_df$drugScores[[1]]
+    gene_drug_scores<-gene_drug_scores[c("drugClass.name","drug.name", "score", "text")]
+    tmp<-rbind(tmp, gene_drug_scores)
+    }
+  names(tmp)<-c("drugClass.name", "Drug name", "HIVDB Score", "Drug susceptibility")
+  mutations<-seq_df$alignedGeneSequences[[1]]$mutations[[1]]
+  subtype<-hivdr$subtypeText
+  mutation_list<-paste0(mutations$consensus,mutations$position,mutations$AAs)
+}
+out<-list(seq=seq, genes=genes, drugscores=tmp, mutations=mutation_list, version=version, version_date=verDate, subtype=subtype)
+return(out)
+}
+```
+
+```{r}
+hivdr<-generate_dr_report(params$dr_report_hivdb)
+seq<-hivdr$seq
+genes<-hivdr$genes
+mutation_list<-hivdr$mutation_list
+tmp<-hivdr$drugscores
+
+# added the algorithm version and date
+version <- paste("HIVDB", hivdr$version, sep = " ")
+verDate <- paste0("(",hivdr$version_date, ")" )
+version_date <- paste(version, verDate, sep=" ")
+```
+
+```{r}
+comments <- read.delim(params$mutation_comments)
+```
+
+
+```{r}
+dr_report<-read.csv(params$dr_report_hydra)
+dr_report$variants<-paste0(dr_report$Wildtype,
+                           dr_report$Position,
+                           dr_report$Mutation)
+
+PR<-dr_report[dr_report$Gene=="PR",]
+PR_minor_mutations<-PR$variants[PR$Category=="PIMinor"]
+PR_major_mutations<-PR$variants[PR$Category=="PIMajor"]
+OTHER_PR_mutations<-PR$variants[PR$Category=="Other"]
+
+
+RT<-dr_report[dr_report$Gene=="RT",]
+NNRTI_mutations<-RT$variants[RT$Category=="NNRTI"]
+NRTI_mutations<-RT$variants[RT$Category=="NRTI"]
+OTHER_RT_mutations<-RT$variants[RT$Category=="Other"]
+
+IN<-dr_report[dr_report$Gene=="IN",]
+IN_accessory_mutations<-IN$variants[IN$Category=="Accessory"]
+IN_major_mutations<-IN$variants[IN$Category=="Major"]
+OTHER_IN_mutations<-IN$variants[IN$Category=="Other"]
+```
+
+```{r}
+dr_report$Comment<-comments$Comment[match(dr_report$variants, comments$Mutation)]
+
+PR_mutations <- c(PR_minor_mutations, PR_major_mutations, OTHER_PR_mutations)
+PR_mutations <- PR_mutations[!is.na(PR_mutations)]
+PR_comments <- dr_report[dr_report$Gene=="PR",]
+
+RT_mutations <- c(NNRTI_mutations, NRTI_mutations, OTHER_RT_mutations)
+RT_mutations <- RT_mutations[!is.na(RT_mutations)]
+RT_comments <- dr_report[dr_report$Gene=="RT",]
+
+IN_mutations <- c(IN_major_mutations, IN_accessory_mutations, OTHER_IN_mutations)
+IN_mutations <- IN_mutations[!is.na(IN_mutations)]
+IN_comments <- dr_report[dr_report$Gene=="IN",]
+```
+<!-- Credits: Quasitools, Hydra, Sierralocal, HIVdb. -->
+
+Row 1
+-----------------------------------------------------------------------
+
+### **Basic summary**
+
+**Query ID**: `r seq`
+
+**Sequence includes**: `r genes`
+
+**Sequence subtype**: `r hivdr$subtype`
+
+**Mutational threshold**: `r paste0(100*params$mutational_threshold,"%")`
+
+**Minimum read depth**: `r params$minimum_read_depth`
+
+### **Frequency of detected mutations**
+
+```{r fig.align="center", echo = FALSE,fig.width=15}
+p<-ggplot(data=dr_report, aes(x=variants, y=Mutation.Frequency, fill=variants))
+p<-p+geom_bar(stat="identity")+ylab("Mutation frequency")+xlab("Mutation")
+p<-p+theme(axis.text.x = element_text(color="black", size=15,angle = 90))+
+  theme(axis.title.x = element_text(color="black", size=20,face="bold"))+
+  theme(axis.title.y = element_text(color="black", size=20, face="bold"))+
+  theme(axis.text.y = element_text(color="black", size=15))
+p<-p+theme(panel.background = element_blank(), #set a clear background with black border enclosing the figure
+        panel.border = element_rect(fill=NA),
+        legend.position = "none")
+p
+```
+
+<!-- Mutations: `r hivdr$mutations` -->
+
+Row 2
+-----------------------------------------------------------------------
+### **Drug Resistance Interpretation: PR**
+**Algorithm version**: `r version_date`
+
+**PI Major Mutations**: `r PR_major_mutations`
+
+**PI Minor Mutations**: `r PR_minor_mutations`
+
+**Other Mutations**: `r OTHER_PR_mutations`
+
+**Comments**: 
+
+```{r}
+PR_comments<-PR_comments["Comment"]
+colnames(PR_comments)<-NULL
+PR_comments %>% 
+  kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F) %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "150px")
+```
+
+### **Mutation HIVDR Scores: PR**
+
+```{r}
+PR_df<-tmp[tmp$drugClass.name=="PI",]
+PR_df[2:4] %>% 
+kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F, align="c") %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "300px")
+```
+
+Row 3
+-----------------------------------------------------------------------
+### **Drug Resistance Interpretation: RT**
+
+**Algorithm version**: `r version_date`
+
+**NNRTI Mutations**: `r NNRTI_mutations`
+
+**NRTI Mutations**: `r NRTI_mutations`
+
+**Other Mutations**: `r OTHER_RT_mutations`
+
+**Comments**:
+
+```{r}
+RT_comments<-RT_comments["Comment"]
+colnames(RT_comments)<-NULL
+RT_comments %>% 
+  kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F) %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "150px")
+```
+
+
+### **Mutation HIVDR Scores: NNRTI**
+
+```{r}
+RT_df<-tmp[tmp$drugClass.name=="NNRTI",]
+RT_df[2:4] %>% 
+kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F, align="c") %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "300px")
+```
+
+### **Mutation HIVDR Scores: NRTI**
+
+```{r}
+RT_df<-tmp[tmp$drugClass.name=="NRTI",]
+RT_df[2:4] %>% 
+ kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F, align="c") %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "300px")
+```
+
+Row 4
+-----------------------------------------------------------------------
+
+### **Drug Resistance Interpretation: INI**
+
+**Algorithm version**: `r version_date`
+
+**INI Major Mutations**: `r IN_major_mutations`
+
+**INI Accessory Mutations**: `r IN_accessory_mutations`
+
+**Other Mutations**: `r OTHER_IN_mutations`
+
+**Comments**: 
+
+```{r}
+IN_comments<-IN_comments["Comment"]
+colnames(IN_comments)<-NULL
+IN_comments %>% 
+  kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F) %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "150px")
+```
+
+
+### **Mutation HIVDR Scores: INI**
+```{r}
+IN_df<-tmp[tmp$drugClass.name=="INSTI",]
+IN_df[2:4] %>% 
+  kableExtra::kable(booktabs = TRUE, longtable = TRUE, row.names=F, align="c") %>% kable_styling(latex_options = c("hold_position", 
+    "repeat_header", position = "")) %>% scroll_box(width = "100%", height = "300px")
+```
