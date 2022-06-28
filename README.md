@@ -9,7 +9,6 @@
 
 A Nextflow Pipeline for Analysis of NGS-based HIV Drug Resistance Data
 
-
 ## Installation
 
 QuasiFlow requires that you have Nextflow (version 21.04.3 or higher). Install [Nextflow](https://nf-co.re/usage/installation) and [Docker](https://docs.docker.com/engine/installation/) or [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/installation.html) to run the pipeline. 
@@ -31,16 +30,17 @@ Below is the list of tools that are used in the QuasiFlow pipeline. These tools 
 
 + [fastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc)
 + [MultiQC](https://multiqc.info/)
++ [Trim-galore](https://github.com/FelixKrueger/TrimGalore)
 + [Quasitools](https://phac-nml.github.io/quasitools/)
 + [Sierra-local](https://github.com/PoonLab/sierra-local)
-+ R packages (Jsonlite, plyr, dplyr, kableExtra, flexdashboard, knitr), all available in [CRAN](https://cran.r-project.org/)
++ R packages (Jsonlite, plyr, dplyr, flexdashboard, rmarkdown, knitr), all available in [CRAN](https://cran.r-project.org/)
 
 Clone the QuasiFlow repository and test the help
 
 ```bash
 git clone https://github.com/AlfredUg/QuasiFlow.git
 cd QuasiFlow
-nextflow run QuasiFlow --help
+nextflow run quasiflow.nf --help
 ```
 
 ## Usage
@@ -147,7 +147,6 @@ Examples of drug resistance reports are available at the links below.
 
 + [Example 1](https://alfredug.github.io/QuasiFlow/hivdr_DRR030225.html)
 + [Example 2](https://alfredug.github.io/QuasiFlow/hivdr_DRR030224.html)
-+ [Example 3](https://alfredug.github.io/QuasiFlow/hivdr_DRR030226.html)
 
 #### Pipeline information output
 
