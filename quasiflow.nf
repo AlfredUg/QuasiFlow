@@ -93,7 +93,7 @@ log.info "========================================="
 Channel
     .fromFilePairs( params.reads )
     .ifEmpty { error "Cannot find any reads matching: ${params.reads}" }
-    .into { read_pairs_ch_1; read_pairs_ch_3 }
+    .into { read_pairs_ch_1; read_pairs_ch_2; read_pairs_ch_3 }
  
 process runfastQC {
     tag "${pairId}" 
@@ -129,12 +129,28 @@ process runMultiQC{
 }
 
 
+process runTrimGalore {
+    tag "${pairId}"
+    publishDir "${params.outdir}/adaptors-trimmed-reads", mode: "copy", overwrite: false
+
+    input:
+    set pairId, file(in_fastq) from read_pairs_ch_2
+
+    output:
+    tuple val(pairId), path("*.fq") into adaptor_trimmed_ch
+
+    """
+    mkdir ${pairId}
+    trim_galore -q ${params.min_read_qual} --paired ${in_fastq.get(0)} ${in_fastq.get(1)} -o . 
+    """
+}
+
 process runHydra{
     tag "$pairId"
     publishDir params.outdir, mode: 'copy'
 
     input:
-    set pairId, path(reads) from read_pairs_ch_3
+    set pairId, path(reads) from adaptor_trimmed_ch
     
     output:
     tuple val(pairId), path('consensus_*.fasta') into cns_sequence_ch
@@ -147,7 +163,6 @@ process runHydra{
     quasitools hydra ${reads} -o . --generate_consensus \
         --reporting_threshold ${params.reporting_threshold} \
         --consensus_pct ${params.consensus_pct} \
-        --min_read_qual ${params.min_read_qual} \
         --length_cutoff ${params.length_cutoff} \
         --score_cutoff ${params.score_cutoff} \
         --min_variant_qual ${params.min_variant_qual} \

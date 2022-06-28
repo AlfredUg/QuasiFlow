@@ -1,15 +1,11 @@
 ---
-title: "QuasiFlow NGS-Based HIV Drug Resistance Report"
+title: "**NGS-Based HIV Drug Resistance Report**"
 output: 
   pdf_document:
+    includes:
+      in_header: header.tex
     keep_tex: true
-classoption: svgnames
-header-includes:
-    - \usepackage{amsfonts,amssymb,amsmath}
-    - \usepackage{titlesec}
-    - \usepackage{soul}  
-    - \titleformat{\subsection}{\sffamily\Large\bfseries\rlap{\color{DarkGreen!90}\rule[-1.5ex]{\linewidth}{3ex}\vspace{-3.5ex}}\sffamily\Large\color{white}}{\thesubsection}{1em}{}
-
+    
 nocite: '@*'
 bibliography: refs.bib
 
@@ -149,6 +145,7 @@ knitr::kable(PR_comments_list, row.names=FALSE)
 PR_df<-tmp[tmp$drugClass.name=="PI",]
 knitr::kable(PR_df[2:4], row.names=FALSE)
 ```
+\newpage
 
 ## **Drug Resistance Interpretation: RT**
 
@@ -165,7 +162,6 @@ colnames(RT_comments_list)<-"Comments"
 knitr::kable(RT_comments_list, row.names=FALSE)
 ```
 
-
 ### **Mutation HIVDR Scores: NRTI**
 
 ```{r,echo=FALSE}
@@ -179,6 +175,8 @@ knitr::kable(RT_df[2:4], row.names=FALSE)
 RT_df<-tmp[tmp$drugClass.name=="NNRTI",]
 knitr::kable(RT_df[2:4], row.names=FALSE)
 ```
+
+\newpage
 
 ## **Drug Resistance Interpretation: IN**
 
@@ -202,4 +200,3 @@ knitr::kable(IN_df[2:4], row.names=FALSE)
 ```
 
 ## **References**
-

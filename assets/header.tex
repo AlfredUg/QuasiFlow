@@ -1,0 +1,16 @@
+\usepackage{fancyhdr}
+\usepackage{amsfonts,amssymb,amsmath}
+\usepackage{titlesec}
+\usepackage{soul}  
+\usepackage{datetime}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{Version 1.0.1}
+\fancyhead[RE,LO]{QuasiFlow pipeline}
+\fancyfoot[RE,LO]{Report created on \today\ \currenttime}
+\fancyfoot[LE,RO]{\thepage}
+\fancypagestyle{plain}{\pagestyle{fancy}}
+\renewcommand{\familydefault}{\sfdefault}
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\footrulewidth}{1pt}
+\titleformat{\subsection}{\large\bfseries\rlap{\color{teal!90}\rule[0.0ex]{\linewidth}{3ex}\vspace{-4.2ex}}\large\color{white}}{\thesubsection}{1em}{}
