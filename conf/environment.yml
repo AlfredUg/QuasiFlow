@@ -1,0 +1,14 @@
+name: quasiflow-base-env
+channels:
+   - conda-forge
+   - bioconda
+   - defaults
+dependencies:
+   - python
+   - r-tidyverse
+   - r-flexdashboard
+   - r-kableExtra
+   - quasitools
+   - fastqc
+   - multiqc
+   - trim-galore
