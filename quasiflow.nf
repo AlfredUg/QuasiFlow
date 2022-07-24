@@ -190,7 +190,7 @@ process runSierralocal {
 
     script:
     """
-   /Users/alfred/miniconda3/bin/sierralocal $cns_seq -o consensus_${pair_id}.json -xml ${params.xml}
+   sierralocal $cns_seq -o consensus_${pair_id}.json -xml ${params.xml}
     """
 }
 
