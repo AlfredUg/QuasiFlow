@@ -19,8 +19,6 @@ output:
 ```{r setup, include=FALSE}
 require(knitr)
 library(flexdashboard)
-require(plyr)
-require(dplyr)
 require(kableExtra)
 ```
 

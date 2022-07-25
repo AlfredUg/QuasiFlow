@@ -20,8 +20,6 @@ params:
 
 ```{r setup, include=FALSE}
 require(knitr)
-require(plyr)
-require(dplyr)
 require(jsonlite)
 ```
 
