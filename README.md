@@ -8,8 +8,6 @@
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/alfred_ug.svg?style=social)](https://twitter.com/alfred_ug) 
 
-https://img.shields.io/badge/uses-conda-yellowgreen
-
 ## Introduction
 
 QuasiFlow is a nextflow pipeline for reproducible analysis of NGS-based HIVDR testing data across different computing environments. The pipeline takes raw sequence reads in FASTQ format as input, performs quality control, mapping of reads to a reference genome, variant calling, querying the database for detection of HIV drug resistance mutations, and ultimately generates a user-friendly report in PDF and HTML format. QuasiFlow is publicly available at https://github.com/AlfredUg/QuasiFlow. 
