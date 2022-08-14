@@ -20,7 +20,11 @@ params:
 
 ```{r setup, include=FALSE}
 require(knitr)
+require(plyr)
+require(dplyr)
 require(jsonlite)
+require(tinytex)
+tinytex::install_tinytex()
 ```
 
 ```{r, eval=TRUE, echo=FALSE}
@@ -195,10 +199,6 @@ knitr::kable(IN_comments_list, row.names=FALSE)
 ```{r,echo=FALSE}
 IN_df<-tmp[tmp$drugClass.name=="INSTI",]
 knitr::kable(IN_df[2:4], row.names=FALSE)
-```
-
-```{r,echo=FALSE}
-write.csv(tmp, file=paste0(seq,".csv"))
 ```
 
 ## **References**
