@@ -3,138 +3,73 @@
 [![](https://img.shields.io/badge/nextflow-21.04.1-yellowgreen)](https://www.nextflow.io)
 [![](https://img.shields.io/badge/uses-singularity-brightgreen)](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
 [![](https://img.shields.io/badge/uses-docker-orange)](https://docs.docker.com/get-docker)
+[![](https://img.shields.io/badge/uses-conda-yellowgreen)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
 [![](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/alfred_ug.svg?style=social)](https://twitter.com/alfred_ug) 
 
-A Nextflow Pipeline for Analysis of NGS-based HIV Drug Resistance Data
+https://img.shields.io/badge/uses-conda-yellowgreen
+
+## Introduction
+
+QuasiFlow is a nextflow pipeline for reproducible analysis of NGS-based HIVDR testing data across different computing environments. The pipeline takes raw sequence reads in FASTQ format as input, performs quality control, mapping of reads to a reference genome, variant calling, querying the database for detection of HIV drug resistance mutations, and ultimately generates a user-friendly report in PDF and HTML format. QuasiFlow is publicly available at https://github.com/AlfredUg/QuasiFlow. 
 
 ## Installation
 
-QuasiFlow requires that you have Nextflow (version 21.04.3 or higher). Install [Nextflow](https://nf-co.re/usage/installation) and [Docker](https://docs.docker.com/engine/installation/) or [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/installation.html) to run the pipeline. 
+QuasiFlow requires **nextflow** (version 21.04.3 or higher) and any of **conda**/**singularity**/**docker**. In this walk through, we shall demonstrate the use of `conda` which is more readily available to most users.
 
-####  Use Nextflow to pull the pipeline. 
-
-In this case, all dependencies will be pulled automatically. 
+The first option is to install the pipeline using nextflow, it will be installed in the `$HOME` directory under the `.nextflow` sub-directory. Confirm that installation was successful by printing out the help message.
 
 ```bash
 nextflow pull AlfredUg/QuasiFlow
-nextflow run QuasiFlow --help
+nextflow run ~/.nextflow/assets/AlfredUg/QuasiFlow --help
 ```
 
-##### Native installation
-
-Alternatively, you can first install the dependancies.
-
-Below is the list of tools that are used in the QuasiFlow pipeline. These tools are readliy available and may be installed using `conda` or `pip`.
-
-+ [fastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc)
-+ [MultiQC](https://multiqc.info/)
-+ [Trim-galore](https://github.com/FelixKrueger/TrimGalore)
-+ [Quasitools](https://phac-nml.github.io/quasitools/)
-+ [Sierra-local](https://github.com/PoonLab/sierra-local)
-+ R packages (Jsonlite, plyr, dplyr, flexdashboard, rmarkdown, knitr), all available in [CRAN](https://cran.r-project.org/)
-
-Clone the QuasiFlow repository and test the help
-
+Alternatively, simply clone the pipeline repository into a desired directory. Similarly, confirm that installation was successful by printing out the help message.
 ```bash
 git clone https://github.com/AlfredUg/QuasiFlow.git
-cd QuasiFlow
-nextflow run quasiflow.nf --help
+nextflow run QuasiFlow --help
 ```
 
 ## Usage
 
-Below is a basic command to run QuasiFlow. More parameters can be specified either in the `nextflow.config` file or simply given as commandline arguments.
+The pipeline takes as input paired-end illumina data in `FASTQ` format. Let's download some test data from the European Nucleotide Archive (ENA) using `wget` command and decompress it using the `gunzip` command. This is paired-end data from a single sample of bioProject PRJDB3502.
 
-```
-nextflow run quasiflow.nf --reads path/to/reads -profile base
-```
-
-Run QuasiFlow on a test dataset. 
-
-```
-git clone https://github.com/AlfredUg/QuasiFlow.git
-cd QuasiFlow
-
-nextflow run quasiflow.nf --min_freq 0.2 --min_dp 1000
+```bash
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/DRR030/DRR030218/DRR030218_1.fastq.gz 
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/DRR030/DRR030218/DRR030218_2.fastq.gz 
 ```
 
-As the pipeline runs, parameters information and analysis progress will be printed on screen, an example of which is shown below.
-
+```bash
+gunzip DRR030218*.gz
 ```
-N E X T F L O W  ~  version 21.04.1
-Launching `quasiflow.nf` [modest_shannon] - revision: efb4fdde33
-============================================================
- AlfredUg/QuasiFlow   ~  version 1.0.1
-============================================================
-Run Name       : modest_shannon
-Reads          : /path/to/QuasiFlow/test_data/*{1,2}.fastq
-Output directory: /path/to/QuasiFlow/results
-Reporting threshold: 1
-Consensus percentage: 20
-Minimum read quality: 30
-Length cut off : 100
-Score cutoff   : 30
-Minimum variant quality: 30
-Minimum depth  : 1000
-Minimum allele count: 5
-Minimum mutation frequency: 0.2
-Report template: /path/to/QuasiFlow/assets/hivdr.Rmd
-Current home   : /path/to/user/home
-Current user   : user
-Current path   : /path/to/QuasiFlow
-Script dir     : /path/to/QuasiFlow
-Config Profile : standard
-=========================================
-executor >  local (9)
-[13/8b73da] process > runfastQC (DRR030219)      [100%] 2 of 2 ✔
-[76/e83952] process > runMultiQC                 [100%] 1 of 1 ✔
-[b8/d89a64] process > runHydra (DRR030219)       [100%] 2 of 2 ✔
-[15/decfee] process > runSierralocal (DRR030219) [100%] 2 of 2 ✔
-[5f/c5d871] process > renderReport (DRR030219)   [100%] 2 of 2 ✔
-WARN: Task runtime metrics are not reported when using macOS without a container engine
-Completed at: 25-Jun-2022 19:57:26
-Duration    : 4m 18s
-CPU hours   : 0.1
-Succeeded   : 9
+Run QuasiFlow on a test dataset with default parameters under the `conda` profile. This option does not require prior installation since it automatically pulls the pipeline from `main` branch of the pipeline repository on github. In addition, it installs all the dependancies in a `conda` environment. If you already installed the pipeline using the procedure above, see next options.
+
+```bash
+nextflow run AlfredUg/QuasiFlow -r main --reads "$PWD/*_{1,2}.fastq" -profile conda
 ```
 
-By default the outputs are saved in the `results` directory with a structure shown below.
-
-```
-results
-|
-|   consensus*.fasta
-|   consensus*.json
-|   dr_report*.csv
-|   filtered*.fastq
-|   mutation_report*.aavf
-|   hivdr*.html
-|
-|____qcresults-raw-reads
-|   |   raw_reads_multiqc_report.html
-|   |
-│   │___DRR030218_fastqc
-|   |   |   DRR030218_1_fastqc.zip
-|   |   |   DRR030218_2_fastqc.zip
-|   |   
-│   │___DRR030219_fastqc
-|       |   DRR030219_1_fastqc.zip
-|       |   DRR030219_2_fastqc.zip
-|           
-└───pipeline_info
-|   │   QuasiFlow_DAG.html
-|   |   QuasiFlow_report.html
-|   │   QuasiFlow_timeline.html
-|   │   QuasiFlow_trace.txt
+If you pulled/installed the pipeline using nextflow, simply point to the installation path as follows;
+```bash
+nextflow run ~/.nextflow/assets/AlfredUg/QuasiFlow --reads "$PWD/*_{1,2}.fastq" -profile conda
 ```
 
-#### Quality control
+Similarly, if you already cloned the pipeline repository, simply point to the installation path as follows;
+```bash
+nextflow run path/to/QuasiFlow --reads "$PWD/*_{1,2}.fastq" -profile conda
+```
+
+### Profiles
+
+Quasiflow can be run under different computing environments, simply choose an appropriate profile via the `-profile` argument. Could take any of the following `-profile conda, singularity, docker`. Custom profiles can be added to the `conf` directory using any of the available profiles as a template.
+
+#### Pipeline 
+
+**Outputs Quality control**
 
 * `raw_reads_multiqc_report.html`: Aggregated quality control data and visualisations - one file for entire dataset
 
-#### Variants and drug resistance outputs
+**Variants and drug resistance outputs**
 
 * `consensus*.fasta`: `FASTA` files of consensus sequences - one per sample
 * `consensus*.json`: `JSON` files of detailed HIV drug resistance analysis - one per sample
@@ -143,17 +78,13 @@ results
 * `mutation_report*.aavf`: `AAVF` files of amino acid variant calls - one per sample
 * `hivdr*.html`: `HTML` Final drug resistance report - one per sample
 
-Examples of drug resistance reports are available at the links below.
+**Pipeline information output**
 
-+ [Example 1](https://alfredug.github.io/QuasiFlow/hivdr_DRR030225.html)
-+ [Example 2](https://alfredug.github.io/QuasiFlow/hivdr_DRR030224.html)
+* `QuasiFlow_DAG.html`: Graphical representation of the pipeline's processes/operators and channels between them.
+* `QuasiFlow_report.html`: Overall start and completion time, CPU and memory usage.
+* `QuasiFlow_timeline.html`: Timeline for all the processes executed in the pipeline.
 
-#### Pipeline information output
-
-* `QuasiFlow_DAG.html`: 
-* `QuasiFlow_report.html`: 
-* `QuasiFlow_timeline.html`: 
-* `QuasiFlow_trace.txt`: 
+Note: Nextflow throws the following warning on MacOS, `WARN: Task runtime metrics are not reported when using macOS without a container engine`. 
 
 ## Parameters
 
@@ -201,19 +132,26 @@ Optional parameters
 
 * `--outdir`: Path to directory where results will be saved 
 
-### Profiles
+## Dependancies.
 
-Quasiflow can be run under different computing environments, simply choose an appropriate profile via the `-profile` argument. Could take any of the following `-profile base, singularity, docker`. Custom profiles can be added to the `conf` directory using any of the available profiles as a template.
+Below is the list of tools that are used in the QuasiFlow pipeline. These tools are readliy available and may be installed using `conda` via `bioconda` channel.
+
++ [fastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc)
++ [MultiQC](https://multiqc.info/)
++ [Trim-galore](https://github.com/FelixKrueger/TrimGalore)
++ [Quasitools](https://phac-nml.github.io/quasitools/)
++ [Sierra-local](https://github.com/PoonLab/sierra-local)
++ R packages (Jsonlite, plyr, dplyr, flexdashboard, rmarkdown, knitr, tinytex), all available in [CRAN](https://cran.r-project.org/)
 
 ## Troubleshooting
 
-Kindly report any issues [here](https://github.com/AlfredUg/QuasiFlow/issues).
+Kindly report any issues at https://github.com/AlfredUg/QuasiFlow/issues.
 
 ## License
 
 QuasiFlow is licensed under GNU GPL v3.
 
-
 ## Citation
 
 **This work is currently under peer review. A formal citation will be availed in due course.**
+
