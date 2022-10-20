@@ -183,14 +183,14 @@ process runSierralocal {
     publishDir params.outdir, mode: 'copy'
 
     input:
-    tuple val(pair_id), path(cns_seq) from cns_sequence_ch
+    set pair_id, path(cns_seq) from cns_sequence_ch
 
     output:
     tuple val(pair_id), path('consensus*.json') into cns_json_ch
 
     script:
     """
-   sierralocal $cns_seq -o consensus_${pair_id}.json -xml ${params.xml}
+    sierralocal $cns_seq -o consensus_${pair_id}.json -xml ${params.xml}
     """
 }
 
@@ -198,12 +198,11 @@ process runSierralocal {
 process renderReport{
     tag "$pair_id"
     publishDir params.outdir, mode: 'copy'
-
+    
     input:
-    tuple val(pair_id), path(cns_json) from cns_json_ch
-    tuple val(pair_id), path(dr_report) from dr_report_ch
+    set pair_id, path(cns_json) from cns_json_ch
     path rmd from params.rmd
-    path rmd_static from params.rmd_static
+    path rmd_static from params.rmd_static 
 
     output:
     tuple val(pair_id), path('hivdr_*.html'), path('hivdr_*.pdf') into final_report_ch
@@ -212,8 +211,7 @@ process renderReport{
     """
     Rscript -e 'rmarkdown::render("${rmd}", 
         params=list(
-            mutation_comments="${params.mutation_db_comments}",
-            dr_report_hydra="${params.outdir}/${dr_report}", 
+            mutation_comments="${params.mutation_db_comments}", 
             dr_report_hivdb="${params.outdir}/${cns_json}",
             mutational_threshold=${params.min_freq},
             minimum_read_depth=${params.min_dp},
@@ -223,7 +221,6 @@ process renderReport{
     Rscript -e 'rmarkdown::render("${rmd_static}", 
         params=list(
             mutation_comments="${params.mutation_db_comments}",
-            dr_report_hydra="${params.outdir}/${dr_report}", 
             dr_report_hivdb="${params.outdir}/${cns_json}",
             mutational_threshold=${params.min_freq},
             minimum_read_depth=${params.min_dp},

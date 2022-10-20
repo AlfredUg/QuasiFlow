@@ -10,7 +10,6 @@ nocite: '@*'
 bibliography: refs.bib
 
 params:
-  dr_report_hydra: ""
   dr_report_hivdb: ""
   mutation_comments: ""
   mutational_threshold: 0
@@ -24,13 +23,13 @@ require(plyr)
 require(dplyr)
 require(jsonlite)
 require(tinytex)
-tinytex::install_tinytex()
+#tinytex::install_tinytex()
 ```
 
 ```{r, eval=TRUE, echo=FALSE}
 generate_dr_report<-function(path){
   hivdr <- jsonlite::fromJSON(path, flatten = TRUE)
-tmp<-data.frame()
+  Drugscores<-data.frame()
 for (i in 1:dim(hivdr)[1]) {
   seq_df <- hivdr[i,]
   seq<-seq_df$inputSequence.header
@@ -38,29 +37,45 @@ for (i in 1:dim(hivdr)[1]) {
   genes<-drug_res$gene.name
   for (gene in unique(genes)) {
     gene_df<-drug_res[drug_res$gene.name==gene,]
-    
     # extracted the version and date
     version <- gene_df$version.text
     verDate <- gene_df$version.publishDate
     gene_drug_scores<-gene_df$drugScores[[1]]
     gene_drug_scores<-gene_drug_scores[c("drugClass.name","drug.name", "score", "text")]
-    tmp<-rbind(tmp, gene_drug_scores)
+    Drugscores<-rbind(Drugscores, gene_drug_scores)
     }
-  names(tmp)<-c("drugClass.name", "Drug name", "HIVDB Score", "Drug susceptibility")
+  names(Drugscores)<-c("drugClass.name", "Drug name", "HIVDB Score", "Drug susceptibility")
   mutations<-seq_df$alignedGeneSequences[[1]]$mutations
   subtype<-hivdr$subtypeText
+  AApositions<-hivdr[[3]][[1]]
+  AApositions<-AApositions[c("firstAA","lastAA","gene.name")]
+  
+  mut_comments<-hivdr$drugResistance[[1]]$drugScores[[1]]$partialScores[[1]]$mutations
+  comments<-data.frame()
+  if (length(mut_comments)>0){
+    for (i in 1:length(mut_comments)) {
+      mut<-mut_comments[[i]]$text
+      type<-mut_comments[[i]]$primaryType
+      tmp<-data.frame(mut_comments[[i]]$comments)
+      comm<-tmp$text
+      tmp<-data.frame(Mutation=mut, Type=type, Comment=comm)
+      comments<-rbind(comments,tmp)
+    }  
+  }
 }
-out<-list(seq=seq, genes=genes, drugscores=tmp, mutations=mutations, version=version, version_date=verDate, subtype=subtype)
+out<-list(seq=seq, genes=genes, drugscores=Drugscores, mutations=mutations, version=version, version_date=verDate, subtype=subtype, AApositions=AApositions,comments=comments)
 return(out)
 }
 ```
 
 ```{r, eval=TRUE, echo=FALSE}
 hivdr<-generate_dr_report(params$dr_report_hivdb)
-seq<-hivdr$seq
+seq<-sub("_.*","",hivdr$seq)
 genes<-hivdr$genes
 mutations<-hivdr$mutations
 tmp<-hivdr$drugscores
+AApositions<-hivdr$AApositions
+comments<-hivdr$comments
 
 # added the algorithm version and date
 version <- paste("HIVDB", hivdr$version, sep = " ")
@@ -69,44 +84,75 @@ version_date <- paste(version, verDate, sep=" ")
 ```
 
 ```{r, echo=FALSE}
-comments <- read.csv(params$mutation_comments,strip.white=T)
+#comments <- read.csv(params$mutation_comments,strip.white=T)
 ```
 
 
 ```{r, echo=FALSE}
-PR_mutations<-mutations[[1]]
-PR_mutations<-paste0(PR_mutations$consensus, PR_mutations$position, PR_mutations$AAs)
-PR_comments <- comments[comments$Mutation%in%PR_mutations,]
-PR_major<-PR_comments$Mutation[PR_comments$Type=="Major"]
-PR_accessory<-PR_comments$Mutation[PR_comments$Type=="Accessory"]
-PR_Other<-PR_mutations[!PR_mutations%in%c(PR_major,PR_accessory)]
-PR_comments_list<-PR_comments["Comment"]
+PR_major = ""
+PR_accessory = ""
+PR_Other = ""
+PR_comments_list = NULL
+firstAA_PR=""
+lastAA_PR=""
 
-RT_mutations<-mutations[[2]]
-RT_mutations<-paste0(RT_mutations$consensus, RT_mutations$position, RT_mutations$AAs)
-RT_comments <- comments[comments$Mutation%in%RT_mutations,]
-RT_NNRTI<-RT_comments$Mutation[RT_comments$Type=="NNRTI"]
-RT_NRTI<-RT_comments$Mutation[RT_comments$Type=="NRTI"]
-RT_Other<-RT_mutations[!RT_mutations%in%c(RT_NNRTI,RT_NRTI)]
-RT_comments_list<-RT_comments["Comment"]
+if("PR"%in%genes){
+  PR_mutations<-mutations[[which(AApositions$gene.name=="PR")]]
+  PR_mutations<-paste0(PR_mutations$consensus, PR_mutations$position, PR_mutations$AAs)
+  PR_comments <- comments[comments$Mutation%in%PR_mutations,]
+  PR_major<-PR_comments$Mutation[PR_comments$Type=="Major"]
+  PR_accessory<-PR_comments$Mutation[PR_comments$Type=="Accessory"]
+  PR_Other<-PR_mutations[!PR_mutations%in%c(PR_major,PR_accessory)]
+  PR_comments_list<-PR_comments$Comment
+  firstAA_PR=AApositions$firstAA[AApositions$gene.name=="PR"]
+  lastAA_PR=AApositions$lastAA[AApositions$gene.name=="PR"]
+  }
 
-IN_mutations<-mutations[[3]]
-IN_mutations<-paste0(IN_mutations$consensus, IN_mutations$position, IN_mutations$AAs)
-IN_comments <- comments[comments$Mutation%in%IN_mutations,]
-IN_major<-IN_comments$Mutation[IN_comments$Type=="Major"]
-IN_accessory<-IN_comments$Mutation[IN_comments$Type=="Accessory"]
-IN_Other<-IN_mutations[!IN_mutations%in%c(IN_major,IN_accessory)]
-IN_comments_list<-IN_comments["Comment"]
+RT_NNRTI = ""
+RT_NRTI = ""
+RT_Other = ""
+RT_comments_list = NULL
+firstAA_RT=""
+lastAA_RT=""
 
-#Function to display mutation list or None 
+if("RT"%in%genes){
+  RT_mutations<-mutations[[which(AApositions$gene.name=="RT")]]
+  RT_mutations<-paste0(RT_mutations$consensus, RT_mutations$position, RT_mutations$AAs)
+  RT_comments <- comments[comments$Mutation%in%RT_mutations,]
+  RT_NNRTI<-RT_comments$Mutation[RT_comments$Type=="NNRTI"]
+  RT_NRTI<-RT_comments$Mutation[RT_comments$Type=="NRTI"]
+  RT_Other<-RT_mutations[!RT_mutations%in%c(RT_NNRTI,RT_NRTI)]
+  RT_comments_list<-RT_comments$Comment
+  firstAA_RT=AApositions$firstAA[AApositions$gene.name=="RT"]
+  lastAA_RT=AApositions$lastAA[AApositions$gene.name=="RT"]
+}
+
+IN_major=""
+IN_accessory=""
+IN_Other=""
+IN_comments_list=NULL
+firstAA_IN=""
+lastAA_IN=""
+
+if("IN"%in%genes){
+  IN_mutations<-mutations[[which(AApositions$gene.name=="IN")]]
+  IN_mutations<-paste0(IN_mutations$consensus, IN_mutations$position, IN_mutations$AAs)
+  IN_comments <- comments[comments$Mutation%in%IN_mutations,]
+  IN_major<-IN_comments$Mutation[IN_comments$Type=="Major"]
+  IN_accessory<-IN_comments$Mutation[IN_comments$Type=="Accessory"]
+  IN_Other<-IN_mutations[!IN_mutations%in%c(IN_major,IN_accessory)]
+  IN_comments_list<-IN_comments$Comment
+  firstAA_IN=AApositions$firstAA[AApositions$gene.name=="IN"]
+  lastAA_IN=AApositions$lastAA[AApositions$gene.name=="IN"]
+}
+
 mutationList_display<-function(x){
   if(length(x)==0){
     return("None")
   }else{
-    return(x)
+    return(unique(x))
   }
 }
-
 ```
 
 ## **Sequence summary**
@@ -128,6 +174,10 @@ mutationList_display<-function(x){
 
 ## **Drug Resistance Interpretation: PR**
 
+**First AA**: `r firstAA_PR`     
+
+**Last AA**:  `r lastAA_PR` 
+
 **Algorithm version**: `r version_date`
 
 **PI Major Resistance Mutations**: `r mutationList_display(PR_major)`
@@ -136,20 +186,29 @@ mutationList_display<-function(x){
 
 **Other PR Mutations**: `r mutationList_display(PR_Other)`
 
+**Comments**: `r if(length(PR_comments_list)<1){"None"}`
+
 ```{r, echo=FALSE}
-colnames(PR_comments_list)<-"Comments"
-knitr::kable(PR_comments_list, row.names=FALSE)
+if(length(PR_comments_list)>0){
+  PR_comments_list<-data.frame(unique(PR_comments_list))
+  names(PR_comments_list)<-""
+  knitr::kable(unique(PR_comments_list), align = "l", row.names=FALSE)
+}
 ```
 
-### **Mutation HIVDR Scores: PR**
+#### **Mutation HIVDR Scores: PR**
 
 ```{r,echo=FALSE}
 PR_df<-tmp[tmp$drugClass.name=="PI",]
-knitr::kable(PR_df[2:4], row.names=FALSE)
+knitr::kable(PR_df[2:4], row.names=FALSE)  
 ```
 \newpage
 
 ## **Drug Resistance Interpretation: RT**
+
+**First AA**: `r firstAA_RT`     
+
+**Last AA**:  `r lastAA_RT` 
 
 **Algorithm version**: `r version_date`
 
@@ -159,28 +218,39 @@ knitr::kable(PR_df[2:4], row.names=FALSE)
 
 **Other RT Mutations**: `r mutationList_display(RT_Other)`
 
+**Comments**: `r if(length(RT_comments_list)<1){"None"}`
+
 ```{r,echo=FALSE}
-colnames(RT_comments_list)<-"Comments"
-knitr::kable(RT_comments_list, row.names=FALSE)
+if(length(RT_comments_list)>0){
+  RT_comments_list<-data.frame(unique(RT_comments_list))
+  colnames(RT_comments_list)<-""
+  knitr::kable(RT_comments_list, align = "l", row.names=FALSE)
+}
 ```
 
-### **Mutation HIVDR Scores: NRTI**
+#### **Mutation HIVDR Scores: NRTI**
 
 ```{r,echo=FALSE}
 RT_df<-tmp[tmp$drugClass.name=="NRTI",]
-knitr::kable(RT_df[2:4], row.names=FALSE)
+if(dim(RT_df)[1]>1){
+ knitr::kable(RT_df[2:4], row.names=FALSE)  
+}
 ```
 
-### **Mutation HIVDR Scores: NNRTI**
+#### **Mutation HIVDR Scores: NNRTI**
 
 ```{r,echo=FALSE}
 RT_df<-tmp[tmp$drugClass.name=="NNRTI",]
-knitr::kable(RT_df[2:4], row.names=FALSE)
+knitr::kable(RT_df[2:4], row.names=FALSE)  
 ```
 
 \newpage
 
 ## **Drug Resistance Interpretation: IN**
+
+**First AA**: `r firstAA_IN`     
+
+**Last AA**:  `r lastAA_IN` 
 
 **Algorithm version**: `r version_date`
 
@@ -190,15 +260,22 @@ knitr::kable(RT_df[2:4], row.names=FALSE)
 
 **Other IN Mutations**: `r mutationList_display(IN_Other)`
 
+**Comments**: `r if(length(IN_comments_list)<1){"None"}`
+
 ```{r,echo=FALSE}
-colnames(IN_comments_list)<-"Comments"
-knitr::kable(IN_comments_list, row.names=FALSE)
+if(length(IN_comments_list)>0){
+  IN_comments_list<-data.frame(unique(IN_comments_list))
+  colnames(IN_comments_list)<-""
+  knitr::kable(IN_comments_list, align = "l", row.names=FALSE) 
+}
 ```
 
-### **Mutation HIVDR Scores: INI**
+#### **Mutation HIVDR Scores: INI**
 ```{r,echo=FALSE}
 IN_df<-tmp[tmp$drugClass.name=="INSTI",]
-knitr::kable(IN_df[2:4], row.names=FALSE)
+if(dim(RT_df)[1]>1){
+ knitr::kable(IN_df[2:4], row.names=FALSE)  
+}
 ```
 
 ## **References**
