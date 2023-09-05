@@ -151,5 +151,5 @@ QuasiFlow is licensed under GNU GPL v3.
 
 ## Citation
 
-**This work is currently under peer review. A formal citation will be availed in due course.**
+Ssekagiri A, Jjingo D, Lujumba I, Bbosa N, Bugembe DL, Kateete DP, Jordan IK, Kaleebu P, Ssemwanga D. QuasiFlow: a Nextflow pipeline for analysis of NGS-based HIV-1 drug resistance data. Bioinform Adv. 2022 Nov 28;2(1):vbac089. doi: [10.1093/bioadv/vbac089](https://academic.oup.com/bioinformaticsadvances/article/2/1/vbac089/6849543). PMID: 36699347; PMCID: PMC9722223.
 
