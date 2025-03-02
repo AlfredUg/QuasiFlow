@@ -1,5 +1,9 @@
 # QuasiFlow
 
+> 🔬 We are currently in the process of converting QuasiFlow to Nextflow DSL2. 
+> The DSL2 branch (https://github.com/AlfredUg/QuasiFlow/tree/dsl2) is under active development and may not be fully stable.
+> We appreciate your patience and welcome any feedback! 🙏
+
 [![](https://img.shields.io/badge/nextflow-21.04.1-yellowgreen)](https://www.nextflow.io)
 [![](https://img.shields.io/badge/uses-singularity-brightgreen)](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
 [![](https://img.shields.io/badge/uses-docker-orange)](https://docs.docker.com/get-docker)
